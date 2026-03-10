@@ -75,9 +75,10 @@ export default function HistoryPage() {
   useEffect(() => {
     if (!user) return;
 
-    setLoading(true);
-    getUserOrders(user.id)
-      .then((data) => {
+    async function load() {
+      setLoading(true);
+      try {
+        const data = await getUserOrders(user!.id);
         const mapped: Order[] = (data ?? []).map((o) => ({
           id: o.id,
           date: formatDate(o.created_at),
@@ -89,9 +90,14 @@ export default function HistoryPage() {
           status: o.status as OrderStatus,
         }));
         setOrders(mapped);
-      })
-      .catch((err) => console.error("Gagal memuat riwayat:", err))
-      .finally(() => setLoading(false));
+      } catch (err) {
+        console.error("Gagal memuat riwayat:", err);
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    load();
   }, [user]);
 
   // Tunggu auth siap dulu

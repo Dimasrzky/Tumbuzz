@@ -28,13 +28,22 @@ export async function middleware(request: NextRequest) {
   const { data: { user } } = await supabase.auth.getUser()
   const { pathname } = request.nextUrl
 
-  // Proteksi route admin (kecuali halaman login)
-  // TODO: Aktifkan kembali setelah Supabase auth terhubung
-  // if (pathname.startsWith('/admin/dashboard') && !user) {
-  //   return NextResponse.redirect(new URL('/admin/login', request.url))
-  // }
+  // Cek role dari app_metadata JWT — tanpa DB query
+  const isAdmin = user?.app_metadata?.role === 'admin'
 
-  // Proteksi checkout & history
+  // ── Proteksi route admin (kecuali /admin/login) ──────────────────────────
+  if (pathname.startsWith('/admin') && !pathname.startsWith('/admin/login')) {
+    if (!user || !isAdmin) {
+      return NextResponse.redirect(new URL('/admin/login', request.url))
+    }
+  }
+
+  // ── Cegah admin mengakses halaman user ───────────────────────────────────
+  if (!pathname.startsWith('/admin') && !pathname.startsWith('/auth') && isAdmin) {
+    return NextResponse.redirect(new URL('/admin/dashboard', request.url))
+  }
+
+  // ── Proteksi checkout & history untuk user yang belum login ──────────────
   if ((pathname.startsWith('/checkout') || pathname.startsWith('/history')) && !user) {
     return NextResponse.redirect(new URL('/?login=required', request.url))
   }
@@ -44,7 +53,8 @@ export async function middleware(request: NextRequest) {
 
 export const config = {
   matcher: [
-    '/admin/dashboard/:path*',
+    '/',
+    '/admin/:path*',
     '/checkout/:path*',
     '/history/:path*',
   ],

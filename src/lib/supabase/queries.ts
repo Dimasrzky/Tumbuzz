@@ -247,3 +247,39 @@ export async function getDashboardStats() {
 
   return { totalRevenue, totalOrders, totalUsers, totalSold };
 }
+
+// ── Wallet ────────────────────────────────────────────────────────────────
+
+export async function getWalletBalance(userId: string) {
+  const supabase = createClient();
+  const { data, error } = await supabase
+    .from("wallets")
+    .select("balance")
+    .eq("user_id", userId)
+    .single();
+
+  if (error) return 0;
+  return data?.balance ?? 0;
+}
+
+export async function topUpWallet(userId: string, amount: number) {
+  const supabase = createClient();
+  const { data: wallet } = await supabase
+    .from("wallets")
+    .select("id, balance")
+    .eq("user_id", userId)
+    .single();
+
+  if (wallet) {
+    const { error } = await supabase
+      .from("wallets")
+      .update({ balance: wallet.balance + amount })
+      .eq("user_id", userId);
+    if (error) throw error;
+  } else {
+    const { error } = await supabase
+      .from("wallets")
+      .insert({ user_id: userId, balance: amount });
+    if (error) throw error;
+  }
+}

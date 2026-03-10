@@ -97,7 +97,7 @@ export function ProductCard({ product, quantity, onAdd, onRemove }: ProductCardP
         </h3>
 
         {/* Price */}
-        <div className="flex items-end gap-2 mb-4">
+        <div className="flex items-end gap-2 mb-3">
           <div>
             <p className="text-base font-bold text-brand">
               Rp {discountedPrice.toLocaleString("id-ID")}
@@ -108,6 +108,25 @@ export function ProductCard({ product, quantity, onAdd, onRemove }: ProductCardP
             <p className="text-xs text-foreground/25 line-through mb-0.5">
               Rp {product.price.toLocaleString("id-ID")}
             </p>
+          )}
+        </div>
+
+        {/* Stok */}
+        <div className="mb-3">
+          {product.stock === 0 ? (
+            <span className="text-[10px] font-semibold text-red-400/80">Stok habis</span>
+          ) : product.stock <= 5 ? (
+            <span className="text-[10px] font-semibold text-amber-400/80">
+              Sisa {product.stock} {product.unit}
+            </span>
+          ) : product.stock <= 20 ? (
+            <span className="text-[10px] font-semibold text-foreground/30">
+              Stok {product.stock} {product.unit}
+            </span>
+          ) : (
+            <span className="text-[10px] text-foreground/20">
+              Stok tersedia
+            </span>
           )}
         </div>
 

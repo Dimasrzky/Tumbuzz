@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useMemo, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import { Search, SlidersHorizontal, ChevronDown } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -12,6 +13,7 @@ import { LoginModal } from "@/components/user/login-modal";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/components/providers";
 import { getProducts, getCategories } from "@/lib/supabase/queries";
+import { WalletCard } from "@/components/user/wallet-card";
 
 const SORT_OPTIONS = [
   { label: "Terpopuler", value: "popular" },
@@ -21,7 +23,8 @@ const SORT_OPTIONS = [
 ];
 
 export default function DashboardPage() {
-  const { user } = useAuth();
+  const router = useRouter();
+  const { user, login } = useAuth();
   const isLoggedIn = !!user;
 
   const [products, setProducts] = useState<Product[]>([]);
@@ -101,7 +104,8 @@ export default function DashboardPage() {
 
   const handleCheckout = () => {
     if (!isLoggedIn) return;
-    // TODO: Navigate to checkout page
+    localStorage.setItem("checkout_cart", JSON.stringify(cart));
+    router.push("/checkout");
   };
 
   // ── Filter & sort (client-side) ────────────────────────────────────────────
@@ -138,69 +142,66 @@ export default function DashboardPage() {
       {/* ── Main Content ── */}
       <div className="flex-1 flex flex-col overflow-hidden">
 
+        {/* Wallet */}
+        <WalletCard
+          userId={user?.id ?? null}
+          onLoginClick={() => setShowLogin(true)}
+          isLoggedIn={isLoggedIn}
+        />
+
         {/* Top Bar */}
         <div className="shrink-0 border-b border-border bg-background">
 
-          {/* Row 1: Title */}
-          <div className="px-6 pt-6 pb-3 flex items-end justify-between">
-            <div>
-              <p className="text-[10px] font-semibold text-brand/50 uppercase tracking-[0.2em] mb-1">
-                Belanja
-              </p>
-              <h1
-                className="text-2xl font-bold text-foreground leading-none"
-                style={{ fontFamily: "var(--font-playfair), serif" }}
-              >
-                Etalase
-              </h1>
-            </div>
-            <p className="text-[11px] text-foreground/25 mb-0.5">
-              {loading ? "Memuat..." : `${filteredProducts.length} produk`}
-            </p>
-          </div>
-
-          {/* Row 2: Search + Sort */}
-          <div className="px-6 pb-3.5 flex gap-2">
-            <div className="relative flex-1">
-              <Search
-                size={13}
-                className="absolute left-3.5 top-1/2 -translate-y-1/2 text-foreground/25"
-              />
-              <Input
-                placeholder="Cari nama produk..."
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                className="pl-9 h-9 bg-foreground/[0.04] border-border text-foreground placeholder:text-foreground/25 text-xs rounded-xl focus:border-brand/25 focus:ring-0 w-full"
-              />
-            </div>
-            <div className="relative shrink-0">
-              <Button
-                variant="ghost"
-                onClick={() => setShowSort(!showSort)}
-                className="h-9 px-3 bg-foreground/[0.04] border border-border text-foreground/45 hover:text-foreground/75 hover:bg-foreground/[0.07] rounded-xl text-xs gap-1.5"
-              >
-                <SlidersHorizontal size={12} />
-                {SORT_OPTIONS.find((s) => s.value === sortBy)?.label}
-                <ChevronDown size={11} className={cn("transition-transform duration-200", showSort && "rotate-180")} />
-              </Button>
-              {showSort && (
-                <div className="absolute right-0 top-11 z-20 bg-popover border border-border rounded-xl overflow-hidden shadow-2xl min-w-[150px]">
-                  {SORT_OPTIONS.map((opt) => (
-                    <button
-                      key={opt.value}
-                      onClick={() => { setSortBy(opt.value); setShowSort(false); }}
-                      className={cn(
-                        "w-full text-left px-4 py-2.5 text-xs transition-colors",
-                        sortBy === opt.value
-                          ? "bg-brand/10 text-brand"
-                          : "text-foreground/50 hover:bg-foreground/[0.04] hover:text-foreground/80"
-                      )}
-                    >
-                      {opt.label}
-                    </button>
-                  ))}
-                </div>
-              )}
+          {/* Row 1: Title + Search + Sort */}
+          <div className="px-6 pt-6 pb-3.5 flex items-center justify-between gap-4">
+            <h1
+              className="text-2xl font-bold text-foreground leading-none shrink-0"
+              style={{ fontFamily: "var(--font-playfair), serif" }}
+            >
+              Temukan produk terbaikmu di sini!
+            </h1>
+            <div className="flex items-center gap-2 shrink-0">
+              <div className="relative">
+                <Search
+                  size={13}
+                  className="absolute left-3.5 top-1/2 -translate-y-1/2 text-foreground/25"
+                />
+                <Input
+                  placeholder="Cari nama produk..."
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  className="pl-9 h-9 w-[200px] bg-foreground/[0.04] border-border text-foreground placeholder:text-foreground/25 text-xs rounded-xl focus:border-brand/25 focus:ring-0"
+                />
+              </div>
+              <div className="relative">
+                <Button
+                  variant="ghost"
+                  onClick={() => setShowSort(!showSort)}
+                  className="h-9 px-3 bg-foreground/[0.04] border border-border text-foreground/45 hover:text-foreground/75 hover:bg-foreground/[0.07] rounded-xl text-xs gap-1.5"
+                >
+                  <SlidersHorizontal size={12} />
+                  {SORT_OPTIONS.find((s) => s.value === sortBy)?.label}
+                  <ChevronDown size={11} className={cn("transition-transform duration-200", showSort && "rotate-180")} />
+                </Button>
+                {showSort && (
+                  <div className="absolute right-0 top-11 z-20 bg-popover border border-border rounded-xl overflow-hidden shadow-2xl min-w-[150px]">
+                    {SORT_OPTIONS.map((opt) => (
+                      <button
+                        key={opt.value}
+                        onClick={() => { setSortBy(opt.value); setShowSort(false); }}
+                        className={cn(
+                          "w-full text-left px-4 py-2.5 text-xs transition-colors",
+                          sortBy === opt.value
+                            ? "bg-brand/10 text-brand"
+                            : "text-foreground/50 hover:bg-foreground/[0.04] hover:text-foreground/80"
+                        )}
+                      >
+                        {opt.label}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
             </div>
           </div>
 
@@ -297,7 +298,7 @@ export default function DashboardPage() {
       <LoginModal
         open={showLogin}
         onClose={() => setShowLogin(false)}
-        onGoogleLogin={() => setShowLogin(false)}
+        onGoogleLogin={login}
       />
     </div>
   );

@@ -1,9 +1,8 @@
 "use client";
 
-import { ShoppingCart, Trash2, CreditCard, Tag, ChevronRight, PackageOpen, Truck, Store } from "lucide-react";
+import { ShoppingCart, Trash2, CreditCard, ChevronRight, PackageOpen } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
-import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { useState } from "react";
@@ -24,26 +23,16 @@ interface CartPanelProps {
 }
 
 export function CartPanel({ items, onRemoveItem, onCheckout, onLoginClick, isLoggedIn }: CartPanelProps) {
-  const [voucher, setVoucher] = useState("");
-  const [voucherApplied, setVoucherApplied] = useState(false);
   const [imgErrors, setImgErrors] = useState<Set<string>>(new Set());
-  const [deliveryMethod, setDeliveryMethod] = useState<"delivery" | "pickup">("delivery");
 
-  const subtotal = items.reduce((acc, item) => {
+  const total = items.reduce((acc, item) => {
     const price = item.product.discount
       ? item.product.price - (item.product.price * item.product.discount) / 100
       : item.product.price;
     return acc + price * item.quantity;
   }, 0);
 
-  const shippingFee = deliveryMethod === "delivery" ? 5000 : 0;
-  const discount = voucherApplied ? subtotal * 0.1 : 0;
-  const total = subtotal - discount + shippingFee;
   const totalItems = items.reduce((acc, item) => acc + item.quantity, 0);
-
-  const handleVoucher = () => {
-    if (voucher.toLowerCase() === "tumbuzz10") setVoucherApplied(true);
-  };
 
   return (
     <div className="w-[320px] shrink-0 hidden lg:flex flex-col h-screen sticky top-0">
@@ -126,105 +115,15 @@ export function CartPanel({ items, onRemoveItem, onCheckout, onLoginClick, isLog
           <>
             <Separator />
 
-            {/* Delivery Method */}
-            <div className="space-y-2">
-              <p className="text-xs font-semibold text-foreground/40 flex items-center gap-1.5">
-                <Truck size={11} />
-                Metode
-              </p>
-              <div className="grid grid-cols-2 gap-2">
-                <button
-                  onClick={() => setDeliveryMethod("delivery")}
-                  className={cn(
-                    "flex items-center gap-2 rounded-xl border py-2 px-3 transition-all duration-200",
-                    deliveryMethod === "delivery"
-                      ? "bg-brand/10 border-brand/30 text-brand"
-                      : "bg-foreground/[0.03] border-border text-foreground/40 hover:border-foreground/20 hover:text-foreground/60"
-                  )}
-                >
-                  <Truck size={13} className="shrink-0" />
-                  <div className="text-left">
-                    <p className="text-[11px] font-semibold leading-tight">Diantar</p>
-                  </div>
-                </button>
-                <button
-                  onClick={() => setDeliveryMethod("pickup")}
-                  className={cn(
-                    "flex items-center gap-2 rounded-xl border py-2 px-3 transition-all duration-200",
-                    deliveryMethod === "pickup"
-                      ? "bg-brand/10 border-brand/30 text-brand"
-                      : "bg-foreground/[0.03] border-border text-foreground/40 hover:border-foreground/20 hover:text-foreground/60"
-                  )}
-                >
-                  <Store size={13} className="shrink-0" />
-                  <p className="text-[11px] font-semibold">Ambil Sendiri</p>
-                </button>
-              </div>
-            </div>
-
-            <Separator />
-
-            {/* Voucher */}
-            <div className="space-y-2">
-              <p className="text-xs font-semibold text-foreground/40 flex items-center gap-1.5">
-                <Tag size={11} />
-                Kode Voucher
-              </p>
-              <div className="flex gap-2">
-                <Input
-                  placeholder="Masukkan kode..."
-                  value={voucher}
-                  onChange={(e) => setVoucher(e.target.value)}
-                  disabled={voucherApplied}
-                  className="h-9 bg-foreground/[0.04] border-border text-foreground placeholder:text-foreground/25 text-xs rounded-xl focus:border-brand/30 focus:ring-0"
-                />
-                <Button
-                  onClick={handleVoucher}
-                  disabled={voucherApplied || !voucher}
-                  className={cn(
-                    "h-9 px-3 rounded-xl text-xs font-semibold shrink-0 transition-all",
-                    voucherApplied
-                      ? "bg-brand/15 text-brand border border-brand/20"
-                      : "bg-foreground/[0.06] hover:bg-foreground/10 text-foreground/60 hover:text-foreground border border-border"
-                  )}
-                >
-                  {voucherApplied ? "✓ Aktif" : "Pakai"}
-                </Button>
-              </div>
-              {voucherApplied && (
-                <p className="text-[11px] text-brand/70 flex items-center gap-1">
-                  ✓ Diskon 10% berhasil diterapkan
-                </p>
-              )}
-            </div>
-
-            {/* Payment Summary */}
+            {/* Ringkasan Pembayaran */}
             <div className="bg-foreground/[0.03] border border-border rounded-2xl p-4 space-y-3">
               <p className="text-xs font-bold text-foreground/50 uppercase tracking-wider flex items-center gap-1.5">
                 <CreditCard size={11} />
                 Ringkasan Pembayaran
               </p>
-              <div className="space-y-2">
-                <div className="flex justify-between items-center">
-                  <span className="text-xs text-foreground/40">Subtotal</span>
-                  <span className="text-xs font-semibold text-foreground/70">Rp {subtotal.toLocaleString("id-ID")}</span>
-                </div>
-                {voucherApplied && (
-                  <div className="flex justify-between items-center">
-                    <span className="text-xs text-brand/70">Diskon voucher</span>
-                    <span className="text-xs font-semibold text-brand">-Rp {discount.toLocaleString("id-ID")}</span>
-                  </div>
-                )}
-                <div className="flex justify-between items-center">
-                  <span className="text-xs text-foreground/40">
-                    {deliveryMethod === "delivery" ? "Ongkos kirim" : "Ambil di toko"}
-                  </span>
-                  {deliveryMethod === "delivery" ? (
-                    <span className="text-xs font-semibold text-foreground/60">Rp 5.000</span>
-                  ) : (
-                    <span className="text-xs font-semibold text-brand/70">Gratis</span>
-                  )}
-                </div>
+              <div className="flex justify-between items-center">
+                <span className="text-xs text-foreground/40">Subtotal</span>
+                <span className="text-xs font-semibold text-foreground/70">Rp {total.toLocaleString("id-ID")}</span>
               </div>
               <Separator />
               <div className="flex justify-between items-center">

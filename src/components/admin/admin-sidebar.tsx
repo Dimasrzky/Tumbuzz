@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useTheme } from "next-themes";
 import {
   LayoutDashboard,
@@ -16,6 +16,7 @@ import {
 } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
 import { cn } from "@/lib/utils";
+import { createClient } from "@/lib/supabase/client";
 
 const navItems = [
   {
@@ -35,9 +36,22 @@ export function AdminSidebar() {
   const router = useRouter();
   const { theme, setTheme } = useTheme();
   const [showLogoutModal, setShowLogoutModal] = useState(false);
+  const [adminName, setAdminName] = useState("Admin");
+  const [adminEmail, setAdminEmail] = useState("");
 
-  const handleLogout = () => {
-    // TODO: Supabase signOut
+  useEffect(() => {
+    const supabase = createClient();
+    supabase.auth.getUser().then(({ data }) => {
+      if (data.user) {
+        setAdminName(data.user.user_metadata?.full_name ?? data.user.email?.split("@")[0] ?? "Admin");
+        setAdminEmail(data.user.email ?? "");
+      }
+    });
+  }, []);
+
+  const handleLogout = async () => {
+    const supabase = createClient();
+    await supabase.auth.signOut();
     router.push("/admin/login");
   };
 
@@ -79,9 +93,9 @@ export function AdminSidebar() {
           <div className="w-8 h-8 rounded-lg bg-brand/15 flex items-center justify-center shrink-0">
             <Shield size={14} className="text-brand" />
           </div>
-          <div>
-            <p className="text-xs font-semibold text-gray-700 dark:text-white/80">Super Admin</p>
-            <p className="text-[10px] text-gray-400 dark:text-white/30">admin@tumbuzz.com</p>
+          <div className="min-w-0">
+            <p className="text-xs font-semibold text-gray-700 dark:text-white/80 truncate">{adminName}</p>
+            <p className="text-[10px] text-gray-400 dark:text-white/30 truncate">{adminEmail}</p>
           </div>
         </div>
       </div>
