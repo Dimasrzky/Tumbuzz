@@ -1,45 +1,60 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, Suspense } from "react";
+import { useSearchParams, useRouter, usePathname } from "next/navigation";
 import { Sidebar } from "@/components/user/sidebar";
 import { LoginModal } from "@/components/user/login-modal";
+import { useAuth } from "@/components/providers";
 
-export default function UserLayout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
+// Komponen terpisah agar useSearchParams bisa di-wrap Suspense
+function LoginRequiredWatcher({ onOpen }: { onOpen: () => void }) {
+  const searchParams = useSearchParams();
+  const router = useRouter();
+  const pathname = usePathname();
+
+  useEffect(() => {
+    if (searchParams.get("login") === "required") {
+      onOpen();
+      router.replace(pathname, { scroll: false });
+    }
+  }, [searchParams, router, pathname, onOpen]);
+
+  return null;
+}
+
+export default function UserLayout({ children }: { children: React.ReactNode }) {
+  const { user, login, logout } = useAuth();
   const [showLogin, setShowLogin] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
 
-  // TODO: Replace with actual Supabase auth state
-  const user = null;
+  const sidebarUser = user
+    ? {
+        name: user.user_metadata?.full_name ?? user.email ?? "Pengguna",
+        email: user.email ?? "",
+        avatar: user.user_metadata?.avatar_url,
+      }
+    : null;
 
   const handleGoogleLogin = async () => {
-    // TODO: Implement Supabase Google OAuth
-    // const supabase = createClient()
-    // await supabase.auth.signInWithOAuth({ provider: 'google' })
+    await login();
     setShowLogin(false);
-  };
-
-  const handleLogout = async () => {
-    // TODO: Implement logout
-    // const supabase = createClient()
-    // await supabase.auth.signOut()
   };
 
   return (
     <div className="flex min-h-screen bg-background">
-      {/* Sidebar */}
+      {/* Pantau ?login=required tanpa blocking render */}
+      <Suspense>
+        <LoginRequiredWatcher onOpen={() => setShowLogin(true)} />
+      </Suspense>
+
       <Sidebar
         collapsed={sidebarCollapsed}
         onToggle={() => setSidebarCollapsed((v) => !v)}
-        user={user}
+        user={sidebarUser}
         onLoginClick={() => setShowLogin(true)}
-        onLogoutClick={handleLogout}
+        onLogoutClick={logout}
       />
 
-      {/* Main Content */}
       <main
         className="flex-1 transition-[margin-left] duration-300 ease-in-out"
         style={{ marginLeft: sidebarCollapsed ? "64px" : "260px" }}
@@ -47,7 +62,6 @@ export default function UserLayout({
         {children}
       </main>
 
-      {/* Login Modal */}
       <LoginModal
         open={showLogin}
         onClose={() => setShowLogin(false)}

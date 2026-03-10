@@ -47,7 +47,7 @@ export default function AdminLoginPage() {
       return;
     }
     setLoading(true);
-    await new Promise((r) => setTimeout(r, 1000)); // simulate API call
+    await new Promise((r) => setTimeout(r, 1000));
 
     if (email !== MOCK_EMAIL || password !== MOCK_PASSWORD) {
       setError("Email atau password salah.");
@@ -110,14 +110,14 @@ export default function AdminLoginPage() {
   };
 
   return (
-    <div className="min-h-screen bg-[#080808] flex items-center justify-center p-4">
+    <div className="min-h-screen bg-gray-50 dark:bg-[#080808] flex items-center justify-center p-4">
       {/* Background pattern */}
       <div className="fixed inset-0 pointer-events-none">
-        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,_#1a2e1a_0%,_transparent_60%)] opacity-40" />
+        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,_#d4edda_0%,_transparent_60%)] dark:bg-[radial-gradient(ellipse_at_top,_#1a2e1a_0%,_transparent_60%)] opacity-40" />
         <div
           className="absolute inset-0 opacity-[0.03]"
           style={{
-            backgroundImage: `radial-gradient(circle, #ffffff 1px, transparent 1px)`,
+            backgroundImage: `radial-gradient(circle, #000000 1px, transparent 1px)`,
             backgroundSize: "32px 32px",
           }}
         />
@@ -131,25 +131,25 @@ export default function AdminLoginPage() {
         style={shake ? { animation: "shake 0.4s ease-in-out" } : {}}
       >
         {/* Card */}
-        <div className="bg-[#0f0f0f] border border-white/8 rounded-3xl overflow-hidden shadow-2xl shadow-black/60">
+        <div className="bg-white dark:bg-[#0f0f0f] border border-black/[0.08] dark:border-white/8 rounded-3xl overflow-hidden shadow-2xl shadow-black/10 dark:shadow-black/60">
 
           {/* Top accent */}
-          <div className="h-1 bg-gradient-to-r from-[#2d6a2d] via-[#c8e6c9] to-[#2d6a2d]" />
+          <div className="h-1 bg-gradient-to-r from-[#2d6a2d] via-brand to-[#2d6a2d]" />
 
           <div className="p-8">
             {/* Logo */}
             <div className="flex flex-col items-center gap-3 mb-8">
-              <div className="w-14 h-14 rounded-2xl bg-[#c8e6c9]/10 border border-[#c8e6c9]/15 flex items-center justify-center">
-                <Leaf size={24} className="text-[#c8e6c9]" />
+              <div className="w-14 h-14 rounded-2xl bg-brand/10 border border-brand/15 flex items-center justify-center">
+                <Leaf size={24} className="text-brand" />
               </div>
               <div className="text-center">
                 <h1
-                  className="text-xl font-bold text-white"
+                  className="text-xl font-bold text-gray-900 dark:text-white"
                   style={{ fontFamily: "'Playfair Display', serif" }}
                 >
                   Tumbuzz Admin
                 </h1>
-                <p className="text-xs text-white/30 mt-0.5">
+                <p className="text-xs text-gray-400 dark:text-white/30 mt-0.5">
                   {step === "credentials"
                     ? "Masuk ke panel administrasi"
                     : "Verifikasi identitas kamu"}
@@ -165,20 +165,20 @@ export default function AdminLoginPage() {
                     className={cn(
                       "w-full h-1 rounded-full transition-all duration-500",
                       step === "credentials" && i === 0
-                        ? "bg-[#c8e6c9]"
+                        ? "bg-brand"
                         : step === "otp"
-                        ? "bg-[#c8e6c9]"
-                        : "bg-white/10"
+                        ? "bg-brand"
+                        : "bg-black/10 dark:bg-white/10"
                     )}
                   />
                 </div>
               ))}
             </div>
             <div className="flex justify-between text-[10px] font-semibold -mt-6 mb-6">
-              <span className={step === "credentials" ? "text-[#c8e6c9]" : "text-[#c8e6c9]/60"}>
+              <span className={step === "credentials" ? "text-brand" : "text-brand/60"}>
                 1. Kredensial
               </span>
-              <span className={step === "otp" ? "text-[#c8e6c9]" : "text-white/25"}>
+              <span className={step === "otp" ? "text-brand" : "text-gray-300 dark:text-white/25"}>
                 2. Verifikasi OTP
               </span>
             </div>
@@ -187,7 +187,7 @@ export default function AdminLoginPage() {
             {step === "credentials" && (
               <div className="space-y-4">
                 <div className="space-y-1.5">
-                  <Label className="text-xs font-semibold text-white/50 uppercase tracking-wider">
+                  <Label className="text-xs font-semibold text-gray-400 dark:text-white/50 uppercase tracking-wider">
                     Email Admin
                   </Label>
                   <Input
@@ -196,12 +196,12 @@ export default function AdminLoginPage() {
                     value={email}
                     onChange={(e) => { setEmail(e.target.value); setError(""); }}
                     onKeyDown={(e) => e.key === "Enter" && handleCredentials()}
-                    className="h-11 bg-white/5 border-white/10 text-white placeholder:text-white/20 rounded-xl focus:border-[#c8e6c9]/40 focus:ring-0 text-sm"
+                    className="h-11 bg-black/[0.04] dark:bg-white/5 border-black/10 dark:border-white/10 text-gray-900 dark:text-white placeholder:text-gray-300 dark:placeholder:text-white/20 rounded-xl focus:border-brand/40 focus:ring-0 text-sm"
                   />
                 </div>
 
                 <div className="space-y-1.5">
-                  <Label className="text-xs font-semibold text-white/50 uppercase tracking-wider">
+                  <Label className="text-xs font-semibold text-gray-400 dark:text-white/50 uppercase tracking-wider">
                     Password
                   </Label>
                   <div className="relative">
@@ -211,11 +211,11 @@ export default function AdminLoginPage() {
                       value={password}
                       onChange={(e) => { setPassword(e.target.value); setError(""); }}
                       onKeyDown={(e) => e.key === "Enter" && handleCredentials()}
-                      className="h-11 bg-white/5 border-white/10 text-white placeholder:text-white/20 rounded-xl focus:border-[#c8e6c9]/40 focus:ring-0 text-sm pr-11"
+                      className="h-11 bg-black/[0.04] dark:bg-white/5 border-black/10 dark:border-white/10 text-gray-900 dark:text-white placeholder:text-gray-300 dark:placeholder:text-white/20 rounded-xl focus:border-brand/40 focus:ring-0 text-sm pr-11"
                     />
                     <button
                       onClick={() => setShowPassword(!showPassword)}
-                      className="absolute right-3.5 top-1/2 -translate-y-1/2 text-white/30 hover:text-white/60 transition-colors"
+                      className="absolute right-3.5 top-1/2 -translate-y-1/2 text-gray-300 dark:text-white/30 hover:text-gray-500 dark:hover:text-white/60 transition-colors"
                     >
                       {showPassword ? <EyeOff size={15} /> : <Eye size={15} />}
                     </button>
@@ -232,7 +232,7 @@ export default function AdminLoginPage() {
                 <Button
                   onClick={handleCredentials}
                   disabled={loading}
-                  className="w-full h-11 rounded-xl bg-[#c8e6c9] hover:bg-[#a5d6a7] text-[#1a3a1a] font-bold text-sm gap-2 transition-all duration-200 mt-2 shadow-lg shadow-[#c8e6c9]/10"
+                  className="w-full h-11 rounded-xl bg-brand hover:bg-brand/90 text-brand-fg font-bold text-sm gap-2 transition-all duration-200 mt-2 shadow-lg shadow-brand/10"
                 >
                   {loading ? (
                     <Loader2 size={16} className="animate-spin" />
@@ -247,16 +247,16 @@ export default function AdminLoginPage() {
             {step === "otp" && (
               <div className="space-y-6">
                 <div className="flex flex-col items-center gap-3">
-                  <div className="w-12 h-12 rounded-2xl bg-[#c8e6c9]/10 border border-[#c8e6c9]/15 flex items-center justify-center">
-                    <Shield size={20} className="text-[#c8e6c9]" />
+                  <div className="w-12 h-12 rounded-2xl bg-brand/10 border border-brand/15 flex items-center justify-center">
+                    <Shield size={20} className="text-brand" />
                   </div>
                   <div className="text-center">
-                    <p className="text-sm font-semibold text-white/80">
+                    <p className="text-sm font-semibold text-gray-700 dark:text-white/80">
                       Kode OTP dikirim ke email
                     </p>
-                    <p className="text-xs text-[#c8e6c9]/60 mt-0.5">{email}</p>
-                    <p className="text-[11px] text-white/25 mt-2">
-                      (Demo: gunakan kode <span className="text-white/50 font-mono">123456</span>)
+                    <p className="text-xs text-brand/60 mt-0.5">{email}</p>
+                    <p className="text-[11px] text-gray-300 dark:text-white/25 mt-2">
+                      (Demo: gunakan kode <span className="text-gray-500 dark:text-white/50 font-mono">123456</span>)
                     </p>
                   </div>
                 </div>
@@ -274,10 +274,10 @@ export default function AdminLoginPage() {
                       onChange={(e) => handleOtpChange(i, e.target.value)}
                       onKeyDown={(e) => handleOtpKeyDown(i, e)}
                       className={cn(
-                        "w-11 h-13 text-center text-lg font-bold rounded-xl border transition-all duration-200 outline-none bg-white/5 text-white",
+                        "w-11 text-center text-lg font-bold rounded-xl border transition-all duration-200 outline-none bg-black/[0.04] dark:bg-white/5 text-gray-900 dark:text-white",
                         digit
-                          ? "border-[#c8e6c9]/40 bg-[#c8e6c9]/8"
-                          : "border-white/10 focus:border-[#c8e6c9]/30"
+                          ? "border-brand/40 bg-brand/8"
+                          : "border-black/10 dark:border-white/10 focus:border-brand/30"
                       )}
                       style={{ height: "52px" }}
                     />
@@ -294,7 +294,7 @@ export default function AdminLoginPage() {
                 <Button
                   onClick={handleVerifyOtp}
                   disabled={loading || otp.join("").length < 6}
-                  className="w-full h-11 rounded-xl bg-[#c8e6c9] hover:bg-[#a5d6a7] text-[#1a3a1a] font-bold text-sm gap-2 transition-all duration-200 shadow-lg shadow-[#c8e6c9]/10 disabled:opacity-40"
+                  className="w-full h-11 rounded-xl bg-brand hover:bg-brand/90 text-brand-fg font-bold text-sm gap-2 transition-all duration-200 shadow-lg shadow-brand/10 disabled:opacity-40"
                 >
                   {loading ? (
                     <Loader2 size={16} className="animate-spin" />
@@ -308,7 +308,7 @@ export default function AdminLoginPage() {
 
                 <button
                   onClick={() => { setStep("credentials"); setOtp(["","","","","",""]); setError(""); }}
-                  className="w-full text-xs text-white/25 hover:text-white/50 transition-colors text-center"
+                  className="w-full text-xs text-gray-300 dark:text-white/25 hover:text-gray-500 dark:hover:text-white/50 transition-colors text-center"
                 >
                   ← Kembali ke halaman login
                 </button>
@@ -318,7 +318,7 @@ export default function AdminLoginPage() {
         </div>
 
         {/* Footer */}
-        <p className="text-center text-[11px] text-white/15 mt-5">
+        <p className="text-center text-[11px] text-gray-300 dark:text-white/15 mt-5">
           Akses terbatas untuk admin Tumbuzz
         </p>
       </div>

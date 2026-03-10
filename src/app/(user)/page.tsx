@@ -1,32 +1,17 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { Search, SlidersHorizontal, ChevronDown } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Skeleton } from "@/components/ui/skeleton";
 import { ProductCard, type Product } from "@/components/user/product-card";
 import { CartPanel, type CartItem } from "@/components/user/cart-panel";
 import { LoginModal } from "@/components/user/login-modal";
 import { cn } from "@/lib/utils";
-
-// ─── Mock Data (replace with Supabase fetch later) ───────────────────────────
-const MOCK_PRODUCTS: Product[] = [
-  { id: "1", name: "Beras Premium Pandan Wangi 5kg", price: 85000, unit: "karung", image: "https://images.unsplash.com/photo-1586201375761-83865001e31c?w=400&h=300&fit=crop", category: "Sembako", rating: 4.8, stock: 50, badge: "Terlaris" },
-  { id: "2", name: "Minyak Goreng Tropical 2L", price: 32000, unit: "botol", image: "https://images.unsplash.com/photo-1474979266404-7eaacbcd87c5?w=400&h=300&fit=crop", category: "Sembako", rating: 4.5, stock: 120, discount: 10 },
-  { id: "3", name: "Telur Ayam Negeri 1kg", price: 28000, unit: "kg", image: "https://images.unsplash.com/photo-1582722872445-44dc5f7e3c8f?w=400&h=300&fit=crop", category: "Protein", rating: 4.7, stock: 80, badge: "Segar" },
-  { id: "4", name: "Sabun Mandi Dove Original", price: 8500, unit: "pcs", image: "https://images.unsplash.com/photo-1631390573753-f0eff9cbde6e?w=400&h=300&fit=crop", category: "Kebersihan", rating: 4.6, stock: 200, discount: 15 },
-  { id: "5", name: "Gula Pasir Putih 1kg", price: 15000, unit: "kg", image: "https://images.unsplash.com/photo-1558642452-9d2a7deb7f62?w=400&h=300&fit=crop", category: "Sembako", rating: 4.4, stock: 90 },
-  { id: "6", name: "Deterjen Rinso Matic 1.8kg", price: 45000, unit: "pack", image: "https://images.unsplash.com/photo-1604335399105-a0c585fd81a1?w=400&h=300&fit=crop", category: "Rumah Tangga", rating: 4.7, stock: 60, discount: 5 },
-  { id: "7", name: "Indomie Goreng Spesial", price: 3500, unit: "bungkus", image: "https://images.unsplash.com/photo-1569718212165-3a8278d5f624?w=400&h=300&fit=crop", category: "Makanan", rating: 4.9, stock: 500, badge: "Favorit" },
-  { id: "8", name: "Shampo Pantene 170ml", price: 22000, unit: "botol", image: "https://images.unsplash.com/photo-1526947425960-945c6e72858f?w=400&h=300&fit=crop", category: "Kebersihan", rating: 4.5, stock: 150 },
-  { id: "9", name: "Teh Celup Sariwangi 25s", price: 11000, unit: "kotak", image: "https://images.unsplash.com/photo-1544787219-7f47ccb76574?w=400&h=300&fit=crop", category: "Minuman", rating: 4.6, stock: 300 },
-  { id: "10", name: "Susu UHT Ultra Milk 1L", price: 18500, unit: "liter", image: "https://images.unsplash.com/photo-1550583724-b2692b85b150?w=400&h=300&fit=crop", category: "Minuman", rating: 4.8, stock: 75, discount: 8 },
-  { id: "11", name: "Kecap Manis ABC 625ml", price: 19000, unit: "botol", image: "https://images.unsplash.com/photo-1562802378-063ec186a863?w=400&h=300&fit=crop", category: "Bumbu", rating: 4.7, stock: 100 },
-  { id: "12", name: "Pel Lantai Super Mop", price: 55000, unit: "pcs", image: "https://images.unsplash.com/photo-1563453392212-326f5e854473?w=400&h=300&fit=crop", category: "Rumah Tangga", rating: 4.3, stock: 8, badge: "Hampir Habis" },
-];
-
-const CATEGORIES = ["Semua", "Sembako", "Protein", "Makanan", "Minuman", "Kebersihan", "Bumbu", "Rumah Tangga"];
+import { useAuth } from "@/components/providers";
+import { getProducts, getCategories } from "@/lib/supabase/queries";
 
 const SORT_OPTIONS = [
   { label: "Terpopuler", value: "popular" },
@@ -36,6 +21,13 @@ const SORT_OPTIONS = [
 ];
 
 export default function DashboardPage() {
+  const { user } = useAuth();
+  const isLoggedIn = !!user;
+
+  const [products, setProducts] = useState<Product[]>([]);
+  const [categories, setCategories] = useState<string[]>(["Semua"]);
+  const [loading, setLoading] = useState(true);
+
   const [cart, setCart] = useState<CartItem[]>([]);
   const [search, setSearch] = useState("");
   const [activeCategory, setActiveCategory] = useState("Semua");
@@ -43,18 +35,52 @@ export default function DashboardPage() {
   const [showSort, setShowSort] = useState(false);
   const [showLogin, setShowLogin] = useState(false);
 
-  // TODO: Replace with actual Supabase auth
-  const isLoggedIn = false;
+  // ── Fetch dari DB ──────────────────────────────────────────────────────────
+  useEffect(() => {
+    async function load() {
+      try {
+        const [rawProducts, rawCategories] = await Promise.all([
+          getProducts(),
+          getCategories(),
+        ]);
 
-  // ── Cart handlers ────────────────────────────────────────────────────────
+        const mapped: Product[] = (rawProducts ?? []).map((p) => ({
+          id: String(p.id),
+          name: p.name,
+          price: p.price,
+          unit: p.unit,
+          image: p.image_url ?? "",
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          category: (p as any).categories?.name ?? "",
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          rating: (p as any).rating ?? 0,
+          stock: p.stock,
+          discount: p.discount || undefined,
+          badge: p.badge || undefined,
+        }));
+
+        setProducts(mapped);
+        setCategories([
+          "Semua",
+          ...(rawCategories ?? []).map((c) => c.name),
+        ]);
+      } catch (err) {
+        console.error("Gagal memuat produk:", err);
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    load();
+  }, []);
+
+  // ── Cart handlers ──────────────────────────────────────────────────────────
   const handleAddToCart = (product: Product) => {
     setCart((prev) => {
       const existing = prev.find((i) => i.product.id === product.id);
       if (existing) {
         return prev.map((i) =>
-          i.product.id === product.id
-            ? { ...i, quantity: i.quantity + 1 }
-            : i
+          i.product.id === product.id ? { ...i, quantity: i.quantity + 1 } : i
         );
       }
       return [...prev, { product, quantity: 1 }];
@@ -66,9 +92,7 @@ export default function DashboardPage() {
       const existing = prev.find((i) => i.product.id === productId);
       if (existing && existing.quantity > 1) {
         return prev.map((i) =>
-          i.product.id === productId
-            ? { ...i, quantity: i.quantity - 1 }
-            : i
+          i.product.id === productId ? { ...i, quantity: i.quantity - 1 } : i
         );
       }
       return prev.filter((i) => i.product.id !== productId);
@@ -80,9 +104,9 @@ export default function DashboardPage() {
     // TODO: Navigate to checkout page
   };
 
-  // ── Filtered & sorted products ───────────────────────────────────────────
+  // ── Filter & sort (client-side) ────────────────────────────────────────────
   const filteredProducts = useMemo(() => {
-    let result = MOCK_PRODUCTS;
+    let result = products;
 
     if (activeCategory !== "Semua") {
       result = result.filter((p) => p.category === activeCategory);
@@ -104,7 +128,7 @@ export default function DashboardPage() {
       default:
         return result;
     }
-  }, [activeCategory, search, sortBy]);
+  }, [products, activeCategory, search, sortBy]);
 
   const getQuantity = (productId: string) =>
     cart.find((i) => i.product.id === productId)?.quantity ?? 0;
@@ -131,7 +155,7 @@ export default function DashboardPage() {
               </h1>
             </div>
             <p className="text-[11px] text-foreground/25 mb-0.5">
-              {filteredProducts.length} produk
+              {loading ? "Memuat..." : `${filteredProducts.length} produk`}
             </p>
           </div>
 
@@ -183,7 +207,7 @@ export default function DashboardPage() {
           {/* Row 3: Category Tabs */}
           <div className="pb-3.5">
             <div className="flex gap-1.5 overflow-x-auto scrollbar-none px-6">
-              {CATEGORIES.map((cat) => (
+              {categories.map((cat) => (
                 <button
                   key={cat}
                   onClick={() => setActiveCategory(cat)}
@@ -204,7 +228,23 @@ export default function DashboardPage() {
 
         {/* Product Grid */}
         <div className="flex-1 overflow-y-auto px-6 py-6">
-          {filteredProducts.length === 0 ? (
+          {loading ? (
+            // ── Skeleton loading ──
+            <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-4">
+              {Array.from({ length: 8 }).map((_, i) => (
+                <div key={i} className="bg-card border border-border rounded-2xl overflow-hidden">
+                  <Skeleton className="h-44 w-full" />
+                  <div className="p-4 space-y-2.5">
+                    <Skeleton className="h-3 w-16" />
+                    <Skeleton className="h-4 w-full" />
+                    <Skeleton className="h-4 w-3/4" />
+                    <Skeleton className="h-5 w-24 mt-1" />
+                    <Skeleton className="h-9 w-full rounded-xl mt-2" />
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : filteredProducts.length === 0 ? (
             <div className="flex flex-col items-center justify-center h-64 gap-3">
               <p className="text-foreground/30 text-sm">Produk tidak ditemukan</p>
               <button
