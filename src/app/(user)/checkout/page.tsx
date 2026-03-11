@@ -81,7 +81,6 @@ export default function CheckoutPage() {
       toast.error(`Pilih ${paymentMethod === "ewallet" ? "e-wallet" : "bank"} terlebih dahulu`);
       return;
     }
-
     if (paymentMethod === "tumbuzz" && walletBalance < total) {
       toast.error("Saldo Tumbuzz Wallet tidak mencukupi");
       return;
@@ -89,6 +88,45 @@ export default function CheckoutPage() {
 
     setPlacing(true);
     try {
+      const isMidtrans = ["qris", "ewallet", "bank", "debit"].includes(paymentMethod);
+
+      if (isMidtrans) {
+        // Buat order + Midtrans transaction via API
+        const res = await fetch("/api/payment/create", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            userId: user.id,
+            customerDetails: {
+              phone: "",
+              address: address || "Ambil di toko",
+              city: "",
+              postalCode: "",
+            },
+            cartItems: items.map((item) => ({
+              product_id: item.product.id,
+              quantity: item.quantity,
+            })),
+            voucherCode: voucherApplied ? voucher.toUpperCase() : null,
+            discountAmount: discount,
+            notes: deliveryMethod === "delivery" ? address : "Ambil di toko",
+            paymentMethod,
+            paymentSub,
+          }),
+        });
+
+        const data = await res.json();
+        if (!data.success) {
+          toast.error(data.message || "Gagal membuat pembayaran");
+          return;
+        }
+
+        localStorage.removeItem("checkout_cart");
+        router.push(`/payment/${data.orderId}`);
+        return;
+      }
+
+      // Alur non-Midtrans (BuzzWallet / COD)
       const orderItems = items.map((item) => {
         const price = item.product.discount
           ? item.product.price - (item.product.price * item.product.discount) / 100
@@ -331,67 +369,66 @@ export default function CheckoutPage() {
                     );
                   })()}
 
-                  <div className="grid grid-cols-2 gap-2">
+                  {/* Metode pembayaran — satu baris */}
+                  <div className="flex gap-2">
                     {([
-                      { value: "qris",    label: "QRIS",          desc: "Scan QR Code",    icon: QrCode,    subs: [] },
-                      { value: "ewallet", label: "E-Wallet",       desc: "GoPay, OVO, Dana", icon: Smartphone, subs: ["GoPay", "OVO", "Dana"] },
-                      { value: "bank",    label: "Transfer Bank",  desc: "BCA, Mandiri, BNI", icon: Landmark,  subs: ["BCA", "Mandiri", "BNI"] },
-                      { value: "debit",   label: "Kartu Debit",    desc: "Visa / Mastercard", icon: CreditCard, subs: [] },
-                      { value: "cash",    label: "Bayar di Tempat", desc: "COD",             icon: Banknote,  subs: [] },
-                    ] as const).map(({ value, label, desc, icon: Icon, subs }) => {
+                      { value: "qris",    label: "QRIS",          icon: QrCode     },
+                      { value: "ewallet", label: "E-Wallet",       icon: Smartphone },
+                      { value: "bank",    label: "Transfer Bank",  icon: Landmark   },
+                      { value: "debit",   label: "Kartu Debit",    icon: CreditCard },
+                      { value: "cash",    label: "COD",            icon: Banknote   },
+                    ] as const).map(({ value, label, icon: Icon }) => {
                       const isSelected = paymentMethod === value;
                       return (
-                        <div
+                        <button
                           key={value}
+                          onClick={() => { setPaymentMethod(value); setPaymentSub(""); }}
                           className={cn(
-                            "rounded-xl border transition-all duration-200 overflow-hidden",
+                            "flex-1 flex flex-col items-center gap-1.5 rounded-xl border p-2.5 transition-all duration-200",
                             isSelected
                               ? "bg-brand/10 border-brand/30 text-brand"
-                              : "bg-foreground/[0.03] border-border text-foreground/50"
+                              : "bg-foreground/[0.03] border-border text-foreground/50 hover:border-foreground/20 hover:text-foreground/70"
                           )}
                         >
-                          <button
-                            onClick={() => { setPaymentMethod(value); setPaymentSub(""); }}
-                            className="flex items-center gap-2.5 p-3 w-full text-left hover:opacity-80 transition-opacity"
-                          >
-                            <div className={cn(
-                              "w-7 h-7 rounded-lg flex items-center justify-center shrink-0 transition-all",
-                              isSelected ? "bg-brand/20" : "bg-foreground/[0.06]"
-                            )}>
-                              <Icon size={13} />
-                            </div>
-                            <div>
-                              <p className="text-xs font-semibold leading-tight">{label}</p>
-                              <p className="text-[10px] opacity-60 mt-0.5">{desc}</p>
-                            </div>
-                          </button>
-
-                          {/* Sub-opsi melebar ke bawah */}
-                          {isSelected && subs.length > 0 && (
-                            <div className="px-2.5 pb-2.5 pt-0">
-                              <div className="h-px bg-brand/15 mb-2" />
-                              <div className="flex gap-1.5">
-                                {subs.map((sub) => (
-                                  <button
-                                    key={sub}
-                                    onClick={() => setPaymentSub(sub)}
-                                    className={cn(
-                                      "flex-1 py-1.5 rounded-lg border text-[11px] font-semibold transition-all duration-200",
-                                      paymentSub === sub
-                                        ? "bg-brand/20 border-brand/40 text-brand"
-                                        : "bg-foreground/[0.04] border-brand/15 text-brand/50 hover:text-brand/80 hover:border-brand/30"
-                                    )}
-                                  >
-                                    {sub}
-                                  </button>
-                                ))}
-                              </div>
-                            </div>
-                          )}
-                        </div>
+                          <div className={cn(
+                            "w-7 h-7 rounded-lg flex items-center justify-center",
+                            isSelected ? "bg-brand/20" : "bg-foreground/[0.06]"
+                          )}>
+                            <Icon size={13} />
+                          </div>
+                          <p className="text-[10px] font-semibold leading-tight text-center">{label}</p>
+                        </button>
                       );
                     })}
                   </div>
+
+                  {/* Sub-opsi */}
+                  {(() => {
+                    const subsMap: Record<string, readonly string[]> = {
+                      ewallet: ["GoPay", "OVO", "Dana", "ShopeePay"],
+                      bank: ["BCA", "Mandiri", "BNI"],
+                    };
+                    const subs = subsMap[paymentMethod] ?? [];
+                    if (subs.length === 0) return null;
+                    return (
+                      <div className="flex gap-1.5 flex-wrap">
+                        {subs.map((sub) => (
+                          <button
+                            key={sub}
+                            onClick={() => setPaymentSub(sub)}
+                            className={cn(
+                              "flex-1 py-1.5 rounded-lg border text-[11px] font-semibold transition-all duration-200",
+                              paymentSub === sub
+                                ? "bg-brand/20 border-brand/40 text-brand"
+                                : "bg-foreground/[0.04] border-brand/15 text-brand/50 hover:text-brand/80 hover:border-brand/30"
+                            )}
+                          >
+                            {sub}
+                          </button>
+                        ))}
+                      </div>
+                    );
+                  })()}
                 </div>
               </div>
             </div>

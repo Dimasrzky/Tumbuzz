@@ -1,14 +1,15 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Package, Clock, CheckCircle2, XCircle, ChevronRight, ShoppingBag } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { Package, Clock, CheckCircle2, XCircle, ChevronRight, ShoppingBag, Hourglass } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/components/providers";
 import { getUserOrders } from "@/lib/supabase/queries";
 
-type OrderStatus = "selesai" | "proses" | "dibatalkan";
+type OrderStatus = "pending" | "proses" | "selesai" | "dibatalkan";
 
 interface Order {
   id: string;
@@ -16,20 +17,27 @@ interface Order {
   items: string[];
   total: number;
   status: OrderStatus;
+  paymentToken: string | null;
 }
 
 const statusConfig: Record<OrderStatus, { label: string; icon: React.ElementType; className: string; dot: string }> = {
+  pending: {
+    label: "Menunggu Bayar",
+    icon: Hourglass,
+    className: "bg-yellow-500/10 text-yellow-400 border-yellow-500/20",
+    dot: "bg-yellow-400 animate-pulse",
+  },
+  proses: {
+    label: "Menunggu Konfirmasi",
+    icon: Clock,
+    className: "bg-blue-500/10 text-blue-400 border-blue-500/20",
+    dot: "bg-blue-400 animate-pulse",
+  },
   selesai: {
     label: "Selesai",
     icon: CheckCircle2,
     className: "bg-brand/10 text-brand border-brand/20",
     dot: "bg-brand",
-  },
-  proses: {
-    label: "Diproses",
-    icon: Clock,
-    className: "bg-amber-500/10 text-amber-400 border-amber-500/20",
-    dot: "bg-amber-400",
   },
   dibatalkan: {
     label: "Dibatalkan",
@@ -69,6 +77,7 @@ function SkeletonList() {
 
 export default function HistoryPage() {
   const { user, loading: authLoading } = useAuth();
+  const router = useRouter();
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(false);
 
@@ -88,6 +97,7 @@ export default function HistoryPage() {
           }),
           total: o.total_amount,
           status: o.status as OrderStatus,
+          paymentToken: o.payment_token ?? null,
         }));
         setOrders(mapped);
       } catch (err) {
@@ -167,6 +177,7 @@ export default function HistoryPage() {
               return (
                 <div
                   key={order.id}
+                  onClick={() => router.push(`/payment/${order.id}`)}
                   className="bg-card border border-border rounded-2xl p-5 hover:border-foreground/20 transition-all cursor-pointer group"
                 >
                   <div className="flex items-start justify-between gap-4">
